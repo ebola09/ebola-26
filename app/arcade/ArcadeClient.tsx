@@ -34,10 +34,13 @@ export default function ArcadeClient() {
     const importButton = document.getElementById("importProgress")!;
     const importFile = document.getElementById("importFile") as HTMLInputElement;
 
-    function getCookie(name: string) {
+    function getCookie(name: string): string | null {
       const value = `; ${document.cookie}`;
       const parts = value.split(`; ${name}=`);
-      return parts.length === 2 ? parts.pop()!.split(";").shift() : null;
+      if (parts.length !== 2) return null;
+      const cookiePart = parts.pop();
+      if (!cookiePart) return null;
+      return cookiePart.split(";").shift() ?? null;
     }
 
     function setCookie(name: string, value: string, days?: number) {
