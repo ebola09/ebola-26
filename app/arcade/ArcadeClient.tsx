@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Script from "next/script";
-import Topbar from "@/components/topbar";
+import Topbar from "@/components/Topbar";
 import Bottombar from "@/components/Bottombar";
 import SettingsPanel from "@/components/SettingsPanel";
 
