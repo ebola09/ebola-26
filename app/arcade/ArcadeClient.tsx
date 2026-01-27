@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Script from "next/script";
-import Topbar, { type ThemeName } from "@/components/Topbar";
+import Topbar from "@/components/Topbar";
 import Bottombar from "@/components/Bottombar";
 import SettingsPanel from "@/components/SettingsPanel";
 
 export default function ArcadeClient() {
+  const themeOptions = ["orange", "purple", "green", "teal", "rose", "blue"] as const;
+  type ThemeName = (typeof themeOptions)[number];
   const [theme, setThemeState] = useState<ThemeName>("orange");
-  const themeOptions: ThemeName[] = ["orange", "purple", "green", "teal", "rose", "blue"];
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const isThemeName = (value: string | null): value is ThemeName =>
