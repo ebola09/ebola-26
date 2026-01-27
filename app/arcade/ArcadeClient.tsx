@@ -2,12 +2,16 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Script from "next/script";
-import Topbar from "@/components/Topbar";
+import Topbar, { type ThemeName } from "@/components/Topbar";
 import Bottombar from "@/components/Bottombar";
 import SettingsPanel from "@/components/SettingsPanel";
 
 export default function ArcadeClient() {
-  const [theme, setThemeState] = useState<string>("orange");
+  const [theme, setThemeState] = useState<ThemeName>("orange");
+  const themeOptions: ThemeName[] = ["orange", "purple", "green", "teal", "rose", "blue"];
+
+  const isThemeName = (value: string | null): value is ThemeName =>
+    !!value && themeOptions.includes(value as ThemeName);
 
   const toggleSettings = useCallback(() => {
     const settingsButton = document.getElementById("settingsButton");
@@ -46,7 +50,7 @@ export default function ArcadeClient() {
       document.cookie = `${name}=${value}${expires}; path=/`;
     }
 
-    function setTheme(themeName: string) {
+    function setTheme(themeName: ThemeName) {
       // @ts-expect-error global from themes.js
       const c = window.colors?.[themeName];
       if (!c) return;
@@ -75,14 +79,19 @@ export default function ArcadeClient() {
     }
 
     const savedTheme = getCookie("theme");
-    const initialTheme = savedTheme || "orange";
+    const initialTheme = isThemeName(savedTheme) ? savedTheme : "orange";
     if (!savedTheme) setCookie("theme", "orange", 30);
 
     setTheme(initialTheme);
     themeSelect.value = initialTheme;
 
     settingsButton.addEventListener("click", toggleSettings);
-    themeSelect.addEventListener("change", () => setTheme(themeSelect.value));
+    themeSelect.addEventListener("change", () => {
+      const selectedTheme = themeSelect.value;
+      if (isThemeName(selectedTheme)) {
+        setTheme(selectedTheme);
+      }
+    });
 
     // ... keep the rest of your existing effect code ...
 
