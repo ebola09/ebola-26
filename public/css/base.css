@@ -1,0 +1,18 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    padding: 90px 0 40px;
+    user-select: none;
+}
+
+input, textarea { user-select: text; }
+
+::placeholder {
+    color: var(--link-color);
+}
+
+img { pointer-events: none; user-drag: none; }
