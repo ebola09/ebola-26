@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Topbar from '../../components/topbar';
-import SettingsPanel from '../../components/SettingsPanelComponent';
-import Bottombar from '../../components/BottombarComponent';
+import Topbar from '../../components/Topbar';
+import SettingsPanel from '../../components/SettingsPanel';
+import Bottombar from '../../components/Bottombar';
 
 interface Game {
   gameID: number;
