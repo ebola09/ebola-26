@@ -9,51 +9,32 @@ import SettingsPanel from "@/components/SettingsPanel";
 export default function ArcadeClient() {
   const [theme, setThemeState] = useState<ThemeName>("orange");
   const themeOptions: ThemeName[] = ["orange", "purple", "green", "teal", "rose", "blue"];
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const isThemeName = (value: string | null): value is ThemeName =>
     !!value && themeOptions.includes(value as ThemeName);
 
-  const toggleSettings = useCallback(() => {
-    const settingsButton = document.getElementById("settingsButton");
-    const settingsPanel = document.querySelector(".settings-panel") as HTMLElement | null;
-    if (!settingsPanel) return;
-
-    const isOpen = settingsPanel.style.display === "block";
-    settingsPanel.style.display = isOpen ? "none" : "block";
-    settingsButton?.classList.toggle("settings-open", !isOpen);
+  const getCookie = useCallback((name: string): string | null => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length !== 2) return null;
+    const cookiePart = parts.pop();
+    if (!cookiePart) return null;
+    return cookiePart.split(";").shift() ?? null;
   }, []);
 
-  useEffect(() => {
-    const MAX_RECENT = 5;
-
-    const recentlyPlayedGrid = document.getElementById("recentlyPlayedGrid")!;
-    const gameGrid = document.getElementById("gameGrid")!;
-    const settingsButton = document.getElementById("settingsButton")!;
-    const settingsPanel = document.querySelector(".settings-panel") as HTMLElement;
-    const themeSelect = document.getElementById("themeSelect") as HTMLSelectElement;
-    const importButton = document.getElementById("importProgress")!;
-    const importFile = document.getElementById("importFile") as HTMLInputElement;
-
-    function getCookie(name: string): string | null {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length !== 2) return null;
-      const cookiePart = parts.pop();
-      if (!cookiePart) return null;
-      return cookiePart.split(";").shift() ?? null;
+  const setCookie = useCallback((name: string, value: string, days?: number) => {
+    let expires = "";
+    if (days) {
+      const date = new Date();
+      date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+      expires = "; expires=" + date.toUTCString();
     }
+    document.cookie = `${name}=${value}${expires}; path=/`;
+  }, []);
 
-    function setCookie(name: string, value: string, days?: number) {
-      let expires = "";
-      if (days) {
-        const date = new Date();
-        date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
-        expires = "; expires=" + date.toUTCString();
-      }
-      document.cookie = `${name}=${value}${expires}; path=/`;
-    }
-
-    function setTheme(themeName: ThemeName) {
+  const setTheme = useCallback(
+    (themeName: ThemeName) => {
       // @ts-expect-error global from themes.js
       const c = window.colors?.[themeName];
       if (!c) return;
@@ -79,29 +60,63 @@ export default function ArcadeClient() {
 
       setCookie("theme", themeName, 30);
       setThemeState(themeName); // <-- keep React in sync
-    }
+    },
+    [setCookie],
+  );
 
+  const toggleSettings = useCallback(() => {
+    setSettingsOpen((isOpen) => {
+      const settingsButton = document.getElementById("settingsButton");
+      settingsButton?.classList.toggle("settings-open", !isOpen);
+      return !isOpen;
+    });
+  }, []);
+
+  const exportProgress = useCallback(() => {
+    const allStorage: Record<string, string> = {};
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key) allStorage[key] = localStorage.getItem(key) || "";
+    }
+    const blob = new Blob([JSON.stringify(allStorage, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "localStorage_backup.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const importProgress = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        localStorage.setItem("gameProgress", JSON.stringify(JSON.parse(reader.result as string)));
+        alert("Game progress imported successfully!");
+      } catch {
+        alert("Invalid JSON file. Please select a valid game progress file.");
+      }
+    };
+    reader.readAsText(file);
+  }, []);
+
+  useEffect(() => {
+    const MAX_RECENT = 5;
+
+    const recentlyPlayedGrid = document.getElementById("recentlyPlayedGrid")!;
+    const gameGrid = document.getElementById("gameGrid")!;
     const savedTheme = getCookie("theme");
     const initialTheme = isThemeName(savedTheme) ? savedTheme : "orange";
     if (!savedTheme) setCookie("theme", "orange", 30);
 
     setTheme(initialTheme);
-    themeSelect.value = initialTheme;
-
-    settingsButton.addEventListener("click", toggleSettings);
-    themeSelect.addEventListener("change", () => {
-      const selectedTheme = themeSelect.value;
-      if (isThemeName(selectedTheme)) {
-        setTheme(selectedTheme);
-      }
-    });
 
     // ... keep the rest of your existing effect code ...
 
-    return () => {
-      settingsButton.removeEventListener("click", toggleSettings);
-    };
-  }, [toggleSettings]);
+    return undefined;
+  }, [getCookie, isThemeName, setCookie, setTheme]);
 
   return (
     <>
@@ -115,7 +130,21 @@ export default function ArcadeClient() {
       </div>
 
       <Bottombar />
-      <SettingsPanel />
+      <SettingsPanel
+        isOpen={settingsOpen}
+        theme={theme}
+        onThemeChange={(newTheme) => {
+          if (isThemeName(newTheme)) {
+            setTheme(newTheme);
+          }
+        }}
+        onExport={exportProgress}
+        onImportClick={() => {
+          const input = document.getElementById("importFile") as HTMLInputElement | null;
+          input?.click();
+        }}
+        onFileImport={importProgress}
+      />
     </>
   );
 }
