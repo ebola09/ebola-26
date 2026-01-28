@@ -24,5 +24,11 @@
     "name": "Escape Road 2",
     "url": "/arcade/games/escape-road-2.html",
     "cover": "/arcade/assets/thumbnails/escape-road-2.png"
+  },
+  {
+    "id": 108084,
+    "name": "Hello Neighbour",
+    "url": "/arcade/games/helloneighbour.html",
+    "cover": "/arcade/assets/thumbnails/helloneighbour.jng"
   }
 ]
