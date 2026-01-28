@@ -6,8 +6,14 @@ import Topbar from "@/components/Topbar";
 import Bottombar from "@/components/Bottombar";
 import SettingsPanel from "@/components/SettingsPanel";
 
+const themeOptions = ["orange", "purple", "green", "teal", "rose", "blue"] as const;
+type ThemeName = (typeof themeOptions)[number];
+
+const isThemeName = (value: string): value is ThemeName =>
+  (themeOptions as readonly string[]).includes(value);
+
 export default function ArcadeClient() {
-  const [theme, setThemeState] = useState<string>("orange");
+  const [theme, setThemeState] = useState<ThemeName>("orange");
 
   const toggleSettings = useCallback(() => {
     const settingsButton = document.getElementById("settingsButton");
@@ -46,7 +52,7 @@ export default function ArcadeClient() {
       document.cookie = `${name}=${value}${expires}; path=/`;
     }
 
-    function setTheme(themeName: string) {
+    function setTheme(themeName: ThemeName) {
       // @ts-expect-error global from themes.js
       const c = window.colors?.[themeName];
       if (!c) return;
@@ -75,14 +81,18 @@ export default function ArcadeClient() {
     }
 
     const savedTheme = getCookie("theme");
-    const initialTheme = savedTheme || "orange";
-    if (!savedTheme) setCookie("theme", "orange", 30);
+    const initialTheme = savedTheme && isThemeName(savedTheme) ? savedTheme : "orange";
+    if (!savedTheme || !isThemeName(savedTheme)) setCookie("theme", "orange", 30);
 
     setTheme(initialTheme);
     themeSelect.value = initialTheme;
 
     settingsButton.addEventListener("click", toggleSettings);
-    themeSelect.addEventListener("change", () => setTheme(themeSelect.value));
+    themeSelect.addEventListener("change", () => {
+      if (isThemeName(themeSelect.value)) {
+        setTheme(themeSelect.value);
+      }
+    });
 
     // ... keep the rest of your existing effect code ...
 
