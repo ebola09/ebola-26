@@ -2,11 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Script from "next/script";
-import Topbar from "@/components/Topbar";
+import Topbar, { type TopbarTheme } from "@/components/Topbar";
 import Bottombar from "@/components/Bottombar";
 import SettingsPanel from "@/components/SettingsPanel";
 
-const themeOptions = ["orange", "purple", "green", "teal", "rose", "blue"] as const;
+const themeOptions = ["orange", "purple", "green", "teal", "rose", "blue"] as const satisfies readonly TopbarTheme[];
 type ThemeName = (typeof themeOptions)[number];
 
 const isThemeName = (value: string): value is ThemeName =>

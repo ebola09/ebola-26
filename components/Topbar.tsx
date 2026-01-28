@@ -9,8 +9,10 @@ const COLORS = {
   blue: { bg: '#001729', text: '#0055FF', link: '#005394', hover: '#0055FF', border: '#00335C', overlay: 'rgba(0,22,39,0.75)', bottomBorder: '#005394', opacity: 0.6, svgColor: '#0055FF' }
 };
 
+export type TopbarTheme = keyof typeof COLORS;
+
 interface TopbarProps {
-  theme: keyof typeof COLORS;
+  theme: TopbarTheme;
   onSettingsClick: () => void;
 }
 
