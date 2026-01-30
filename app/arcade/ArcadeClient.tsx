@@ -6,52 +6,35 @@ import Topbar, { type ThemeName } from "@/components/Topbar";
 import Bottombar from "@/components/Bottombar";
 import SettingsPanel from "@/components/SettingsPanel";
 
+const themeNames: ThemeName[] = ["orange", "purple", "green", "teal", "rose", "blue"];
+
 export default function ArcadeClient() {
   const [theme, setThemeState] = useState<ThemeName>("orange");
-  const themeNames: ThemeName[] = ["orange", "purple", "green", "teal", "rose", "blue"];
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const isThemeName = (value: string): value is ThemeName =>
-    themeNames.includes(value as ThemeName);
+  const isThemeName = useCallback(
+    (value: string): value is ThemeName => themeNames.includes(value as ThemeName),
+    [],
+  );
 
-  const toggleSettings = useCallback(() => {
-    const settingsButton = document.getElementById("settingsButton");
-    const settingsPanel = document.querySelector(".settings-panel") as HTMLElement | null;
-    if (!settingsPanel) return;
-
-    const isOpen = settingsPanel.style.display === "block";
-    settingsPanel.style.display = isOpen ? "none" : "block";
-    settingsButton?.classList.toggle("settings-open", !isOpen);
+  const getCookie = useCallback((name: string) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    return parts.length === 2 ? parts.pop()!.split(";").shift() : null;
   }, []);
 
-  useEffect(() => {
-    const MAX_RECENT = 5;
-
-    const recentlyPlayedGrid = document.getElementById("recentlyPlayedGrid")!;
-    const gameGrid = document.getElementById("gameGrid")!;
-    const settingsButton = document.getElementById("settingsButton")!;
-    const settingsPanel = document.querySelector(".settings-panel") as HTMLElement;
-    const themeSelect = document.getElementById("themeSelect") as HTMLSelectElement;
-    const importButton = document.getElementById("importProgress")!;
-    const importFile = document.getElementById("importFile") as HTMLInputElement;
-
-    function getCookie(name: string) {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      return parts.length === 2 ? parts.pop()!.split(";").shift() : null;
+  const setCookie = useCallback((name: string, value: string, days?: number) => {
+    let expires = "";
+    if (days) {
+      const date = new Date();
+      date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+      expires = "; expires=" + date.toUTCString();
     }
+    document.cookie = `${name}=${value}${expires}; path=/`;
+  }, []);
 
-    function setCookie(name: string, value: string, days?: number) {
-      let expires = "";
-      if (days) {
-        const date = new Date();
-        date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
-        expires = "; expires=" + date.toUTCString();
-      }
-      document.cookie = `${name}=${value}${expires}; path=/`;
-    }
-
-    function setTheme(themeName: string) {
-      if (!isThemeName(themeName)) return;
+  const applyTheme = useCallback(
+    (themeName: ThemeName) => {
       // @ts-expect-error global from themes.js
       const c = window.colors?.[themeName];
       if (!c) return;
@@ -76,25 +59,73 @@ export default function ArcadeClient() {
       if (svg) svg.querySelectorAll("path").forEach((p) => p.setAttribute("fill", c.svgColor));
 
       setCookie("theme", themeName, 30);
-      setThemeState(themeName); // <-- keep React in sync
-    }
+    },
+    [setCookie],
+  );
 
+  const toggleSettings = useCallback(() => {
+    setSettingsOpen((prev) => !prev);
+  }, []);
+
+  useEffect(() => {
     const savedTheme = getCookie("theme");
     const initialTheme = savedTheme && isThemeName(savedTheme) ? savedTheme : "orange";
     if (!savedTheme) setCookie("theme", "orange", 30);
 
-    setTheme(initialTheme);
-    themeSelect.value = initialTheme;
+    setThemeState(initialTheme);
+  }, [getCookie, isThemeName, setCookie]);
 
-    settingsButton.addEventListener("click", toggleSettings);
-    themeSelect.addEventListener("change", () => setTheme(themeSelect.value));
+  useEffect(() => {
+    applyTheme(theme);
+  }, [applyTheme, theme]);
 
-    // ... keep the rest of your existing effect code ...
+  useEffect(() => {
+    const settingsButton = document.getElementById("settingsButton");
+    settingsButton?.classList.toggle("settings-open", settingsOpen);
+  }, [settingsOpen]);
 
-    return () => {
-      settingsButton.removeEventListener("click", toggleSettings);
+  const handleThemeChange = useCallback(
+    (themeName: string) => {
+      if (!isThemeName(themeName)) return;
+      setThemeState(themeName);
+    },
+    [isThemeName],
+  );
+
+  const exportProgress = useCallback(() => {
+    const allStorage: Record<string, string> = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key) allStorage[key] = localStorage.getItem(key) || "";
+    }
+    const blob = new Blob([JSON.stringify(allStorage, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "localStorage_backup.json";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const importProgress = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        localStorage.setItem("gameProgress", JSON.stringify(JSON.parse(reader.result as string)));
+        alert("Game progress imported successfully!");
+      } catch {
+        alert("Invalid JSON file. Please select a valid game progress file.");
+      }
     };
-  }, [toggleSettings]);
+    reader.readAsText(file);
+  }, []);
+
+  const handleImportClick = useCallback(() => {
+    const input = document.getElementById("importFile") as HTMLInputElement | null;
+    input?.click();
+  }, []);
 
   return (
     <>
@@ -108,7 +139,14 @@ export default function ArcadeClient() {
       </div>
 
       <Bottombar />
-      <SettingsPanel />
+      <SettingsPanel
+        isOpen={settingsOpen}
+        theme={theme}
+        onThemeChange={handleThemeChange}
+        onExport={exportProgress}
+        onImportClick={handleImportClick}
+        onFileImport={importProgress}
+      />
     </>
   );
 }
