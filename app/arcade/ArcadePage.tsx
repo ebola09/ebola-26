@@ -31,6 +31,7 @@ export default function ArcadePage() {
   const [theme, setTheme] = useState<keyof typeof COLORS>('orange');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showHomeButton, setShowHomeButton] = useState(true);
 
   const MAX_RECENT = 5;
 
@@ -119,10 +120,11 @@ export default function ArcadePage() {
   const updateGamesDisplay = (query: string, favs?: Game[]) => {
     const currentFavs = favs || getFavoritesFromStorage();
     let gamesToDisplay = allGames;
-    if (query) {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery) {
       gamesToDisplay = allGames.filter(g => {
-        const nameMatch = (g.name || '').toLowerCase().includes(query);
-        const tagMatch = g.tags && g.tags.some(tag => tag.toLowerCase().includes(query));
+        const nameMatch = (g.name || '').toLowerCase().includes(normalizedQuery);
+        const tagMatch = g.tags && g.tags.some(tag => tag.toLowerCase().includes(normalizedQuery));
         return nameMatch || tagMatch;
       });
     }
@@ -232,6 +234,14 @@ export default function ArcadePage() {
     // Load favorites
     const favs = getFavoritesFromStorage();
     setFavorites(favs);
+
+    const homeButtonCookie = getCookie('showHomeButton');
+    if (homeButtonCookie === null) {
+      setCookie('showHomeButton', 'true');
+      setShowHomeButton(true);
+    } else {
+      setShowHomeButton(homeButtonCookie !== 'false');
+    }
 
     // Initialize localStorage
     if (!localStorage.getItem('gameProgress')) {
@@ -350,6 +360,11 @@ export default function ArcadePage() {
         isOpen={settingsOpen}
         theme={theme}
         onThemeChange={(newTheme) => setThemeStyle(newTheme as keyof typeof COLORS)}
+        showHomeButton={showHomeButton}
+        onToggleHomeButton={(value) => {
+          setShowHomeButton(value);
+          setCookie('showHomeButton', value ? 'true' : 'false');
+        }}
         onExport={exportProgress}
         onImportClick={() => {
           const input = document.getElementById('importFile') as HTMLInputElement;

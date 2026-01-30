@@ -4,6 +4,8 @@ interface SettingsPanelProps {
   isOpen: boolean;
   theme: string;
   onThemeChange: (theme: string) => void;
+  showHomeButton: boolean;
+  onToggleHomeButton: (value: boolean) => void;
   onExport: () => void;
   onImportClick: () => void;
   onFileImport: (file: File) => void;
@@ -13,6 +15,8 @@ export default function SettingsPanel({
   isOpen,
   theme,
   onThemeChange,
+  showHomeButton,
+  onToggleHomeButton,
   onExport,
   onImportClick,
   onFileImport,
@@ -34,6 +38,15 @@ export default function SettingsPanel({
           <option value="teal">teal</option>
           <option value="rose">rose</option>
         </select>
+        <label htmlFor="toggleHomeButton" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
+          <input
+            id="toggleHomeButton"
+            type="checkbox"
+            checked={showHomeButton}
+            onChange={(e) => onToggleHomeButton(e.target.checked)}
+          />
+          toggle home button
+        </label>
         <button id="exportProgress" onClick={onExport}>
           export website data
         </button>
