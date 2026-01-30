@@ -31,6 +31,7 @@ export default function ArcadePage() {
   const [theme, setTheme] = useState<keyof typeof COLORS>('orange');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showHomeButton, setShowHomeButton] = useState(true);
 
   const MAX_RECENT = 5;
 
@@ -118,11 +119,12 @@ export default function ArcadePage() {
 
   const updateGamesDisplay = (query: string, favs?: Game[]) => {
     const currentFavs = favs || getFavoritesFromStorage();
+    const normalizedQuery = query.trim().toLowerCase();
     let gamesToDisplay = allGames;
-    if (query) {
+    if (normalizedQuery) {
       gamesToDisplay = allGames.filter(g => {
-        const nameMatch = (g.name || '').toLowerCase().includes(query);
-        const tagMatch = g.tags && g.tags.some(tag => tag.toLowerCase().includes(query));
+        const nameMatch = (g.name || '').toLowerCase().includes(normalizedQuery);
+        const tagMatch = g.tags && g.tags.some(tag => tag.toLowerCase().includes(normalizedQuery));
         return nameMatch || tagMatch;
       });
     }
@@ -179,6 +181,14 @@ export default function ArcadePage() {
     // Load theme
     const savedTheme = (getCookie('theme') as keyof typeof COLORS) || 'orange';
     setThemeStyle(savedTheme);
+
+    const savedShowHomeButton = getCookie('showHomeButton');
+    if (savedShowHomeButton === null) {
+      setCookie('showHomeButton', 'true');
+      setShowHomeButton(true);
+    } else {
+      setShowHomeButton(savedShowHomeButton !== 'false');
+    }
 
     // Load games and blacklist
     Promise.all([
@@ -356,6 +366,11 @@ export default function ArcadePage() {
           input?.click();
         }}
         onFileImport={importProgress}
+        showHomeButton={showHomeButton}
+        onHomeButtonToggle={(nextValue) => {
+          setShowHomeButton(nextValue);
+          setCookie('showHomeButton', String(nextValue));
+        }}
       />
 
       {/* Bottombar */}

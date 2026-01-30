@@ -11,6 +11,7 @@ const themeNames: ThemeName[] = ["orange", "purple", "green", "teal", "rose", "b
 export default function ArcadeClient() {
   const [theme, setThemeState] = useState<ThemeName>("orange");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showHomeButton, setShowHomeButton] = useState(true);
 
   const isThemeName = useCallback(
     (value: string): value is ThemeName => themeNames.includes(value as ThemeName),
@@ -73,6 +74,13 @@ export default function ArcadeClient() {
     if (!savedTheme) setCookie("theme", "orange", 30);
 
     setThemeState(initialTheme);
+    const savedShowHomeButton = getCookie("showHomeButton");
+    if (savedShowHomeButton === null) {
+      setCookie("showHomeButton", "true", 30);
+      setShowHomeButton(true);
+    } else {
+      setShowHomeButton(savedShowHomeButton !== "false");
+    }
   }, [getCookie, isThemeName, setCookie]);
 
   useEffect(() => {
@@ -146,6 +154,11 @@ export default function ArcadeClient() {
         onExport={exportProgress}
         onImportClick={handleImportClick}
         onFileImport={importProgress}
+        showHomeButton={showHomeButton}
+        onHomeButtonToggle={(nextValue) => {
+          setShowHomeButton(nextValue);
+          setCookie("showHomeButton", String(nextValue), 30);
+        }}
       />
     </>
   );

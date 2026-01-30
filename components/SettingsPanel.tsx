@@ -7,6 +7,8 @@ interface SettingsPanelProps {
   onExport: () => void;
   onImportClick: () => void;
   onFileImport: (file: File) => void;
+  showHomeButton: boolean;
+  onHomeButtonToggle: (showHomeButton: boolean) => void;
 }
 
 export default function SettingsPanel({
@@ -16,6 +18,8 @@ export default function SettingsPanel({
   onExport,
   onImportClick,
   onFileImport,
+  showHomeButton,
+  onHomeButtonToggle,
 }: SettingsPanelProps) {
   return (
     <>
@@ -34,6 +38,18 @@ export default function SettingsPanel({
           <option value="teal">teal</option>
           <option value="rose">rose</option>
         </select>
+        <div className="settings-toggle">
+          <label htmlFor="homeButtonToggle" className="settings-toggle-label">
+            show home button:
+          </label>
+          <input
+            id="homeButtonToggle"
+            type="checkbox"
+            className="settings-toggle-checkbox"
+            checked={showHomeButton}
+            onChange={(e) => onHomeButtonToggle(e.target.checked)}
+          />
+        </div>
         <button id="exportProgress" onClick={onExport}>
           export website data
         </button>

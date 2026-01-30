@@ -292,6 +292,26 @@
     cursor: pointer;
 }
 
+.settings-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.settings-toggle-label {
+    display: inline-block;
+    width: auto;
+    margin: 0;
+}
+
+.settings-toggle-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--link-hover-color);
+    cursor: pointer;
+}
+
 .settings-panel button:hover {
     background-color: var(--card-overlay-color);
     border-color: var(--link-hover-color);
