@@ -12,6 +12,81 @@ const COLORS = {
   blue: { text: '#0055FF', bottomBorder: '#005394', opacity: 0.6 }
 };
 
+const PROXY_ENDPOINT = '/api/proxy?url=';
+const PROXY_ATTRS = ['src', 'href', 'action', 'poster', 'data', 'code', 'archive'];
+const INLINE_STYLE_SELECTOR = '[style]';
+
+const shouldProxyUrl = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.startsWith('#')) return false;
+  const lower = trimmed.toLowerCase();
+  return !(
+    lower.startsWith('data:') ||
+    lower.startsWith('javascript:') ||
+    lower.startsWith('blob:') ||
+    lower.startsWith('mailto:') ||
+    lower.startsWith('tel:') ||
+    lower.startsWith('about:')
+  );
+};
+
+const toProxyUrl = (rawUrl: string, baseUrl: string) => {
+  if (!shouldProxyUrl(rawUrl)) return rawUrl;
+  const resolved = new URL(rawUrl, baseUrl).toString();
+  return `${PROXY_ENDPOINT}${encodeURIComponent(resolved)}`;
+};
+
+const rewriteCssUrls = (cssText: string, baseUrl: string) => {
+  return cssText.replace(/url\((['"]?)(.*?)\1\)/gi, (_match, quote: string, url: string) => {
+    if (!shouldProxyUrl(url)) return `url(${quote}${url}${quote})`;
+    const proxied = toProxyUrl(url, baseUrl);
+    return `url(${quote}${proxied}${quote})`;
+  });
+};
+
+const rewriteHtmlWithProxy = (html: string, baseUrl: string) => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+
+  PROXY_ATTRS.forEach(attr => {
+    doc.querySelectorAll(`[${attr}]`).forEach(el => {
+      const value = el.getAttribute(attr);
+      if (!value) return;
+      el.setAttribute(attr, toProxyUrl(value, baseUrl));
+    });
+  });
+
+  doc.querySelectorAll('img[srcset], source[srcset]').forEach(el => {
+    const value = el.getAttribute('srcset');
+    if (!value) return;
+    const rewritten = value
+      .split(',')
+      .map(part => part.trim())
+      .filter(Boolean)
+      .map(entry => {
+        const [url, descriptor] = entry.split(/\s+/, 2);
+        if (!url) return entry;
+        const proxied = toProxyUrl(url, baseUrl);
+        return descriptor ? `${proxied} ${descriptor}` : proxied;
+      })
+      .join(', ');
+    el.setAttribute('srcset', rewritten);
+  });
+
+  doc.querySelectorAll(INLINE_STYLE_SELECTOR).forEach(el => {
+    const styleValue = el.getAttribute('style');
+    if (!styleValue) return;
+    el.setAttribute('style', rewriteCssUrls(styleValue, baseUrl));
+  });
+
+  doc.querySelectorAll('style').forEach(style => {
+    if (!style.textContent) return;
+    style.textContent = rewriteCssUrls(style.textContent, baseUrl);
+  });
+
+  return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
+};
+
 export default function GamePage({ params }: { params: Promise<{ gameId: string }> }) {
   const { gameId } = use(params);
   const router = useRouter();
@@ -33,6 +108,7 @@ export default function GamePage({ params }: { params: Promise<{ gameId: string 
   }, []);
 
   useEffect(() => {
+    let htmlBaseUrl = '';
     // Fetch game data from CDN
     fetch(`https://cdn.jsdelivr.net/gh/gn-math/assets@master/zones.json?v=${Date.now()}`)
       .then(res => res.json())
@@ -44,6 +120,7 @@ export default function GamePage({ params }: { params: Promise<{ gameId: string 
           
           // Fetch the game HTML using the URL from game data
           const gameUrl = game.url.replace('{HTML_URL}', 'https://cdn.jsdelivr.net/gh/gn-math/html@main');
+          htmlBaseUrl = new URL(gameUrl).toString();
           return fetch(`${gameUrl}?v=${Date.now()}`);
         } else {
           throw new Error(`Game ${gameId} not found`);
@@ -55,8 +132,9 @@ export default function GamePage({ params }: { params: Promise<{ gameId: string 
         return res.text();
       })
       .then(html => {
+        const proxiedHtml = rewriteHtmlWithProxy(html, htmlBaseUrl);
         // Create a blob from the HTML content
-        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const blob = new Blob([proxiedHtml], { type: 'text/html;charset=utf-8' });
         const blobUrl = URL.createObjectURL(blob);
         setIframeUrl(blobUrl);
         setLoading(false);
