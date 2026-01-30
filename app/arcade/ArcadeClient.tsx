@@ -2,12 +2,16 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Script from "next/script";
-import Topbar from "@/components/Topbar";
+import Topbar, { type ThemeName } from "@/components/Topbar";
 import Bottombar from "@/components/Bottombar";
 import SettingsPanel from "@/components/SettingsPanel";
 
 export default function ArcadeClient() {
-  const [theme, setThemeState] = useState<string>("orange");
+  const [theme, setThemeState] = useState<ThemeName>("orange");
+  const themeNames: ThemeName[] = ["orange", "purple", "green", "teal", "rose", "blue"];
+
+  const isThemeName = (value: string): value is ThemeName =>
+    themeNames.includes(value as ThemeName);
 
   const toggleSettings = useCallback(() => {
     const settingsButton = document.getElementById("settingsButton");
@@ -47,6 +51,7 @@ export default function ArcadeClient() {
     }
 
     function setTheme(themeName: string) {
+      if (!isThemeName(themeName)) return;
       // @ts-expect-error global from themes.js
       const c = window.colors?.[themeName];
       if (!c) return;
@@ -75,7 +80,7 @@ export default function ArcadeClient() {
     }
 
     const savedTheme = getCookie("theme");
-    const initialTheme = savedTheme || "orange";
+    const initialTheme = savedTheme && isThemeName(savedTheme) ? savedTheme : "orange";
     if (!savedTheme) setCookie("theme", "orange", 30);
 
     setTheme(initialTheme);
