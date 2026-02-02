@@ -1,5 +1,4 @@
 'use client';
-import { Analytics } from "@vercel/analytics/next";
 export default function TosPage() {
   return (
     <div style={{
