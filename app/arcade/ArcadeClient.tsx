@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
 import Topbar, { type ThemeName } from "@/components/Topbar";
 import Bottombar from "@/components/Bottombar";
