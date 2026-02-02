@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Analytics } from "@vercel/analytics/next";
 import Topbar from '../../components/Topbar';
 import SettingsPanel from '../../components/SettingsPanel';
 import Bottombar from '../../components/Bottombar';
