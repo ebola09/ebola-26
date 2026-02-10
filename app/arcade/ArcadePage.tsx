@@ -190,20 +190,22 @@ export default function ArcadePage() {
       setShowHomeButton(savedShowHomeButton !== 'false');
     }
 
-    // Load games and blacklist
+    // Load games, blacklist, and forced includes
     Promise.all([
       fetch('https://cdn.jsdelivr.net/gh/gn-math/assets@master/zones.json').then(res => res.json()),
       fetch('/blacklist.json').then(res => res.json()),
+      fetch('/forcedGames.json').then(res => res.json()).catch(() => []),
       fetch('/localGames.json').then(res => res.json()).catch(() => [])
     ])
-      .then(([gamesData, blacklist, localGames]) => {
+      .then(([gamesData, blacklist, forcedGames, localGames]) => {
         const blacklistIds = new Set(blacklist);
+        const forcedGameIds = new Set(forcedGames);
         const allGamesList: Game[] = [];
 
         // Add CDN games
         if (gamesData?.length) {
           const cdnGames = gamesData
-            .filter((g: any) => !blacklistIds.has(g.id))
+            .filter((g: any) => !blacklistIds.has(g.id) || forcedGameIds.has(g.id))
             .map((g: any) => ({
               gameID: g.id,
               name: g.name,
